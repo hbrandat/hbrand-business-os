@@ -9,7 +9,7 @@ import {
 import { cn, formatDateTime } from '@/lib/utils'
 import {
   ArrowLeft, Send, Loader2, Check, X, Plus, Play,
-  CheckCircle2, MessageSquare, ClipboardList, Sparkles,
+  CheckCircle2, MessageSquare, ClipboardList, Sparkles, ShieldAlert,
 } from 'lucide-react'
 
 export default function EmployeePage({ params }: { params: Promise<{ key: string }> }) {
@@ -66,10 +66,13 @@ export default function EmployeePage({ params }: { params: Promise<{ key: string
             <p className="text-sm text-violet-300">{emp.role_title}</p>
             <p className="text-sm text-zinc-400 mt-2">{emp.description}</p>
           </div>
-          <button onClick={() => setShowNew(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm rounded-xl transition-all font-medium">
-            <Plus className="w-4 h-4" /> Aufgabe geben
-          </button>
+          <div className="flex flex-col gap-2">
+            {emp.key === 'walter' && <WalterButton />}
+            <button onClick={() => setShowNew(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm rounded-xl transition-all font-medium">
+              <Plus className="w-4 h-4" /> Aufgabe geben
+            </button>
+          </div>
         </div>
       </div>
 
@@ -319,6 +322,38 @@ function NewTaskModal({ emp, customers, onClose, onDone }: { emp: Employee; cust
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+// Walters „Jetzt prüfen"-Button — startet einen Wächter-Lauf von Hand
+function WalterButton() {
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  async function check() {
+    setBusy(true); setMsg(null)
+    try {
+      const res = await fetch('/api/walter', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+      })
+      const data = await res.json()
+      if (data.problems === 0) setMsg('✓ Alles sauber — keine Vorfälle')
+      else setMsg(`⚠ ${data.problems} Vorfall/Vorfälle${data.telegram?.ok ? ' · Telegram gesendet' : ''}`)
+    } catch (e: any) {
+      setMsg('Fehler: ' + e.message)
+    }
+    setBusy(false)
+    setTimeout(() => setMsg(null), 8000)
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button onClick={check} disabled={busy}
+        className="flex items-center gap-1.5 px-3 py-2 bg-slate-600 hover:bg-slate-700 disabled:opacity-50 text-white text-sm rounded-xl transition-all font-medium">
+        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4" />} Jetzt prüfen
+      </button>
+      {msg && <span className="text-[11px] text-zinc-400 max-w-[180px] text-right">{msg}</span>}
     </div>
   )
 }

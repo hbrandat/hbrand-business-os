@@ -65,6 +65,24 @@ export async function callLLM(
   return { text, input_tokens: inTok, output_tokens: outTok, cost_usd: cost, model }
 }
 
+// Schickt eine Telegram-Nachricht an den Chef. Gibt {ok} zurück, wirft nie.
+export async function sendTelegram(text: string): Promise<{ ok: boolean; error?: string }> {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!botToken || !chatId) return { ok: false, error: 'Telegram nicht konfiguriert' }
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+    })
+    if (!res.ok) return { ok: false, error: (await res.text()).slice(0, 200) }
+    return { ok: true }
+  } catch (e: any) {
+    return { ok: false, error: e.message }
+  }
+}
+
 // Protokolliert einen KI-Job (Kostenkontrolle) + aggregiert in api_costs
 export async function logAiJob(opts: {
   employee_key?: string
