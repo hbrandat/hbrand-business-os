@@ -9,7 +9,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // ── Activity-Logger: jede relevante Aktion landet in der Timeline ──
 export async function logActivity(input: {
-  entity_type: 'customer' | 'order' | 'invoice' | 'ticket'
+  entity_type: 'customer' | 'order' | 'invoice' | 'ticket' | 'asset'
   entity_id: string
   customer_id?: string | null
   type: 'note' | 'status_change' | 'email' | 'call' | 'meeting' | 'file' | 'invoice' | 'payment' | 'ticket' | 'system'
@@ -117,7 +117,7 @@ export type ApiCost = {
 
 export type Activity = {
   id: string
-  entity_type: 'customer' | 'order' | 'invoice' | 'ticket'
+  entity_type: 'customer' | 'order' | 'invoice' | 'ticket' | 'asset'
   entity_id: string
   customer_id?: string
   type: 'note' | 'status_change' | 'email' | 'call' | 'meeting' | 'file' | 'invoice' | 'payment' | 'ticket' | 'system'
@@ -200,3 +200,62 @@ export const ORDER_STAGES = [
   { key: 'review', label: 'Review' },
   { key: 'abgeschlossen', label: 'Abgeschlossen' },
 ] as const
+
+// ── Asset-Maschine ──
+export type AssetType =
+  | 'angebot' | 'rechnung' | 'stellenanzeige' | 'newsletter'
+  | 'datenschutz' | 'social_post' | 'website_konzept' | 'sonstiges'
+
+export type AssetStatus = 'entwurf' | 'in_review' | 'freigegeben' | 'versendet' | 'abgelehnt'
+
+export type Asset = {
+  id: string
+  customer_id?: string
+  order_id?: string
+  type: AssetType
+  title: string
+  brief?: string
+  content?: string
+  format: 'markdown' | 'html'
+  status: AssetStatus
+  version: number
+  model?: string
+  metadata?: Record<string, unknown>
+  approved_at?: string
+  approved_by?: string
+  sent_at?: string
+  created_at: string
+  updated_at: string
+  customers?: Customer
+}
+
+export type AssetVersion = {
+  id: string
+  asset_id: string
+  version: number
+  content?: string
+  note?: string
+  created_by?: string
+  created_at: string
+}
+
+// Asset-Typen-Katalog: was die Maschine erzeugen kann
+export const ASSET_TYPES: { key: AssetType; label: string; icon: string; desc: string }[] = [
+  { key: 'angebot',         label: 'Angebot',            icon: 'FileText',     desc: 'Professionelles Angebot mit Positionen & Preisen' },
+  { key: 'rechnung',        label: 'Rechnung',           icon: 'Receipt',      desc: 'Rechtskonforme Rechnung mit UID & Steuer' },
+  { key: 'stellenanzeige',  label: 'Stellenanzeige',     icon: 'Briefcase',    desc: 'Ansprechende Job-Ausschreibung' },
+  { key: 'newsletter',      label: 'Newsletter',         icon: 'Mail',         desc: 'E-Mail-Newsletter mit klarer Botschaft' },
+  { key: 'datenschutz',     label: 'Datenschutzerklärung', icon: 'Shield',     desc: 'DSGVO-konforme Datenschutzerklärung' },
+  { key: 'social_post',     label: 'Social-Media-Post',  icon: 'Share2',       desc: 'Post für LinkedIn, Instagram & Co.' },
+  { key: 'website_konzept', label: 'Website-Konzept',    icon: 'Layout',       desc: 'Struktur, Seiten & Inhalte für eine Website' },
+  { key: 'sonstiges',       label: 'Sonstiges',          icon: 'Sparkles',     desc: 'Freies Dokument nach Beschreibung' },
+]
+
+// Status-Anzeige für Assets
+export const ASSET_STATUS_META: Record<AssetStatus, { label: string; color: string }> = {
+  entwurf:     { label: 'Entwurf',     color: 'bg-zinc-500/10 text-zinc-300 border-zinc-500/20' },
+  in_review:   { label: 'In Review',   color: 'bg-amber-500/10 text-amber-300 border-amber-500/20' },
+  freigegeben: { label: 'Freigegeben', color: 'bg-green-500/10 text-green-300 border-green-500/20' },
+  versendet:   { label: 'Versendet',   color: 'bg-blue-500/10 text-blue-300 border-blue-500/20' },
+  abgelehnt:   { label: 'Abgelehnt',   color: 'bg-red-500/10 text-red-300 border-red-500/20' },
+}

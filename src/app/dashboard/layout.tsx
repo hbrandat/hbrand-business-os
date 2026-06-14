@@ -14,13 +14,17 @@ import {
   ChevronRight,
   Bell,
   Search,
+  Wand2,
+  LifeBuoy,
 } from 'lucide-react'
 
 const nav = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/customers', icon: Users, label: 'Kunden' },
   { href: '/dashboard/orders', icon: ShoppingBag, label: 'Aufträge' },
+  { href: '/dashboard/assets', icon: Wand2, label: 'Asset-Maschine' },
   { href: '/dashboard/invoices', icon: FileText, label: 'Rechnungen' },
+  { href: '/dashboard/support', icon: LifeBuoy, label: 'Support' },
   { href: '/dashboard/ai-monitor', icon: Bot, label: 'KI Monitor' },
   { href: '/dashboard/costs', icon: DollarSign, label: 'Kosten' },
   { href: '/dashboard/settings', icon: Settings, label: 'Einstellungen' },
