@@ -74,17 +74,51 @@ export type Order = {
 
 export type Invoice = {
   id: string
-  order_id: string
+  order_id?: string | null
   customer_id: string
   invoice_number: string
   amount: number
-  tax_percent: number
+  tax_rate: number
+  net_amount: number
+  tax_amount: number
+  gross_amount: number
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+  issue_date?: string
   due_date?: string
   paid_at?: string
+  payment_terms?: string
+  notes?: string
   created_at: string
+  updated_at?: string
   customers?: Customer
   orders?: Order
+  invoice_items?: InvoiceItem[]
+}
+
+export type InvoiceItem = {
+  id: string
+  invoice_id: string
+  description: string
+  quantity: number
+  unit: string
+  unit_price: number
+  position: number
+  created_at: string
+}
+
+export type Company = {
+  name: string
+  owner?: string
+  email?: string
+  currency?: string
+  vat_id?: string
+  address?: string
+  zip_city?: string
+  phone?: string
+  iban?: string
+  bic?: string
+  bank?: string
+  kleinunternehmer?: boolean
 }
 
 export type AiJob = {
