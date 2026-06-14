@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // 1) Gescheiterte Aufgaben (noch nicht quittiert via metadata.walter_seen)
     const { data: failed } = await db
       .from('tasks')
-      .select('id, title, assignee, error, finished_at, metadata, employees(name)')
+      .select('id, title, assignee, error, finished_at, metadata, employees:employees!tasks_assignee_fkey(name)')
       .eq('status', 'failed')
       .order('finished_at', { ascending: false })
       .limit(50)
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     // 2) Hängende Aufgaben: zu lange in 'working'
     const { data: stuck } = await db
       .from('tasks')
-      .select('id, title, assignee, started_at, employees(name)')
+      .select('id, title, assignee, started_at, employees:employees!tasks_assignee_fkey(name)')
       .eq('status', 'working')
       .lt('started_at', stuckCutoff)
       .limit(50)
