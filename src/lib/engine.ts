@@ -84,38 +84,37 @@ export async function logAiJob(opts: {
     await db.from('ai_jobs').insert({
       customer_id: opts.customer_id ?? null,
       order_id: opts.order_id ?? null,
-      job_type: opts.employee_key ? `employee:${opts.employee_key}` : 'document',
+      task_type: opts.employee_key ? `employee:${opts.employee_key}` : 'document',
       model: opts.model,
       provider: 'anthropic',
       input_tokens: opts.input_tokens,
       output_tokens: opts.output_tokens,
       cost_usd: opts.cost_usd,
-      duration_ms: opts.duration_ms ?? null,
-      status: opts.status ?? 'completed',
-      prompt_summary: opts.prompt_summary?.slice(0, 500) ?? null,
+      duration_seconds: opts.duration_ms != null ? Math.round(opts.duration_ms / 1000) : null,
+      status: opts.status === 'failed' ? 'failed' : 'done',
       result_summary: opts.result_summary?.slice(0, 500) ?? null,
     })
 
-    // Monatsaggregat in api_costs hochzählen (erster Tag des Monats)
-    const month = new Date()
-    const monthKey = new Date(month.getFullYear(), month.getMonth(), 1).toISOString().split('T')[0]
+    // Monatsaggregat in api_costs (keine month-Spalte → pro Monat+Modell via created_at gruppiert)
+    const monthStart = new Date()
+    monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0)
     const { data: existing } = await db
       .from('api_costs')
       .select('id, total_input_tokens, total_output_tokens, total_cost_usd')
-      .eq('month', monthKey)
       .eq('model', opts.model)
+      .gte('created_at', monthStart.toISOString())
       .maybeSingle()
 
     if (existing) {
+      const newUsd = Number(existing.total_cost_usd ?? 0) + opts.cost_usd
       await db.from('api_costs').update({
         total_input_tokens: (existing.total_input_tokens ?? 0) + opts.input_tokens,
         total_output_tokens: (existing.total_output_tokens ?? 0) + opts.output_tokens,
-        total_cost_usd: Number(existing.total_cost_usd ?? 0) + opts.cost_usd,
-        total_cost_eur: (Number(existing.total_cost_usd ?? 0) + opts.cost_usd) * 0.92,
+        total_cost_usd: newUsd,
+        total_cost_eur: newUsd * 0.92,
       }).eq('id', existing.id)
     } else {
       await db.from('api_costs').insert({
-        month: monthKey,
         provider: 'anthropic',
         model: opts.model,
         total_input_tokens: opts.input_tokens,
@@ -125,7 +124,6 @@ export async function logAiJob(opts: {
       })
     }
   } catch (e) {
-    // Logging darf den Hauptfluss nie crashen
     console.error('logAiJob failed', e)
   }
 }
