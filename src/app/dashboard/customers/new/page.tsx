@@ -9,6 +9,7 @@ import Link from 'next/link'
 export default function NewCustomerPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
     name: '', email: '', phone: '', company: '',
     address: '', city: '', country: 'Österreich',
@@ -20,9 +21,25 @@ export default function NewCustomerPage() {
 
   async function save() {
     setSaving(true)
-    const { data, error } = await supabase.from('customers').insert(form).select().single()
+    setError(null)
+    // Leere Strings → NULL, damit Unique-Constraints (z.B. email) nicht greifen
+    // und optionale Felder sauber leer bleiben.
+    const payload: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(form)) {
+      payload[k] = typeof v === 'string' && v.trim() === '' ? null : v
+    }
+    payload.discount_percent = Number(form.discount_percent) || 0
+    const { data, error } = await supabase.from('customers').insert(payload).select().single()
     setSaving(false)
-    if (!error && data) router.push(`/dashboard/customers/${data.id}`)
+    if (error) {
+      setError(
+        error.code === '23505'
+          ? 'Ein Kunde mit dieser E-Mail existiert bereits.'
+          : `Fehler beim Speichern: ${error.message}`,
+      )
+      return
+    }
+    if (data) router.push(`/dashboard/customers/${data.id}`)
   }
 
   return (
@@ -66,6 +83,11 @@ export default function NewCustomerPage() {
             placeholder="Interne Notizen..."
             className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none focus:border-violet-500 resize-none" />
         </div>
+        {error && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {error}
+          </div>
+        )}
         <button onClick={save} disabled={!form.name || saving}
           className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm rounded-xl transition-all font-medium w-full justify-center">
           <Save className="w-4 h-4" />
