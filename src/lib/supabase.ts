@@ -293,3 +293,75 @@ export const ASSET_STATUS_META: Record<AssetStatus, { label: string; color: stri
   versendet:   { label: 'Versendet',   color: 'bg-blue-500/10 text-blue-300 border-blue-500/20' },
   abgelehnt:   { label: 'Abgelehnt',   color: 'bg-red-500/10 text-red-300 border-red-500/20' },
 }
+
+// ── KI-Belegschaft (digitale Mitarbeiter) ──
+export type EmployeeAutonomy = 'on_task' | 'autonomous' | 'background'
+export type EmployeeStatus = 'idle' | 'working' | 'blocked' | 'offline'
+
+export type Employee = {
+  id: string
+  key: string
+  name: string
+  role_title: string
+  emoji: string
+  color: string
+  description?: string
+  system_prompt: string
+  model: string
+  tools?: string[]
+  autonomy: EmployeeAutonomy
+  status: EmployeeStatus
+  is_active: boolean
+  sort_order: number
+  stats?: Record<string, unknown>
+  created_at: string
+  updated_at?: string
+}
+
+export type TaskStatus =
+  | 'inbox' | 'working' | 'needs_chef' | 'approved'
+  | 'handoff' | 'done' | 'failed' | 'cancelled'
+
+export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent'
+
+export type Task = {
+  id: string
+  assignee?: string | null
+  created_by?: string | null
+  customer_id?: string | null
+  order_id?: string | null
+  title: string
+  brief?: string
+  result?: string
+  priority: TaskPriority
+  status: TaskStatus
+  needs_approval: boolean
+  handoff_to?: string | null
+  metadata?: Record<string, unknown>
+  error?: string
+  started_at?: string
+  finished_at?: string
+  created_at: string
+  updated_at?: string
+  employees?: Employee          // assignee join
+  customers?: Customer
+}
+
+// Anzeige-Metadaten für Task-Status
+export const TASK_STATUS_META: Record<TaskStatus, { label: string; color: string }> = {
+  inbox:      { label: 'Im Eingang',      color: 'bg-blue-500/10 text-blue-300 border-blue-500/20' },
+  working:    { label: 'In Arbeit',       color: 'bg-violet-500/10 text-violet-300 border-violet-500/20' },
+  needs_chef: { label: 'Wartet auf Chef', color: 'bg-amber-500/10 text-amber-300 border-amber-500/20' },
+  approved:   { label: 'Freigegeben',     color: 'bg-green-500/10 text-green-300 border-green-500/20' },
+  handoff:    { label: 'Übergabe',        color: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20' },
+  done:       { label: 'Erledigt',        color: 'bg-zinc-500/10 text-zinc-300 border-zinc-500/20' },
+  failed:     { label: 'Fehler',          color: 'bg-red-500/10 text-red-300 border-red-500/20' },
+  cancelled:  { label: 'Abgebrochen',     color: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20' },
+}
+
+export const EMPLOYEE_STATUS_META: Record<EmployeeStatus, { label: string; dot: string }> = {
+  idle:    { label: 'Bereit',    dot: 'bg-green-400' },
+  working: { label: 'Arbeitet',  dot: 'bg-violet-400 animate-pulse' },
+  blocked: { label: 'Blockiert', dot: 'bg-amber-400' },
+  offline: { label: 'Offline',   dot: 'bg-zinc-600' },
+}

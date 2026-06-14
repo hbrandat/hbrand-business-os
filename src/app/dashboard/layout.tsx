@@ -17,10 +17,12 @@ import {
   Wand2,
   LifeBuoy,
   LogOut,
+  UsersRound,
 } from 'lucide-react'
 
 const nav = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/dashboard/team', icon: UsersRound, label: 'Mein KI-Team' },
   { href: '/dashboard/customers', icon: Users, label: 'Kunden' },
   { href: '/dashboard/orders', icon: ShoppingBag, label: 'Aufträge' },
   { href: '/dashboard/assets', icon: Wand2, label: 'Asset-Maschine' },
