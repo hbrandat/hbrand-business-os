@@ -16,6 +16,7 @@ import {
   Search,
   Wand2,
   LifeBuoy,
+  LogOut,
 } from 'lucide-react'
 
 const nav = [
@@ -76,7 +77,7 @@ export default function DashboardLayout({
 
         {/* User */}
         <div className="p-3 border-t border-white/5">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 cursor-pointer transition-all">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
               AH
             </div>
@@ -84,6 +85,15 @@ export default function DashboardLayout({
               <p className="text-sm font-medium text-white truncate">Alexander H.</p>
               <p className="text-xs text-zinc-500 truncate">Alexander@hbrand.at</p>
             </div>
+            <form action="/api/auth/logout" method="POST">
+              <button
+                type="submit"
+                title="Abmelden"
+                className="p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-all"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </form>
           </div>
         </div>
       </aside>
