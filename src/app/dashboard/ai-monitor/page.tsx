@@ -17,7 +17,7 @@ export default function AiMonitorPage() {
   async function load() {
     const [{ data: jobData }, { data: costData }] = await Promise.all([
       supabase.from('ai_jobs').select('*, customers(name), orders(title)').order('created_at', { ascending: false }).limit(50),
-      supabase.from('api_costs').select('*').order('date', { ascending: false }).limit(30),
+      supabase.from('api_costs').select('*').order('created_at', { ascending: false }).limit(30),
     ])
     setJobs(jobData ?? [])
     // Aggregate by model

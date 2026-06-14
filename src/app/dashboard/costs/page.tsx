@@ -16,7 +16,7 @@ export default function CostsPage() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('api_costs').select('*').order('date', { ascending: false }).limit(90),
+      supabase.from('api_costs').select('*').order('created_at', { ascending: false }).limit(90),
       supabase.from('invoices').select('*, customers(name)').order('created_at', { ascending: false }).limit(20),
     ]).then(([{ data: c }, { data: i }]) => {
       setCosts(c ?? [])
@@ -40,7 +40,7 @@ export default function CostsPage() {
   // Group by day for bar chart (last 14 days)
   const byDay = Object.entries(
     costs.reduce((acc: any, c) => {
-      const d = c.date?.split('T')[0] || ''
+      const d = c.created_at?.split('T')[0] || ''
       acc[d] = (acc[d] || 0) + c.total_cost_usd
       return acc
     }, {})
