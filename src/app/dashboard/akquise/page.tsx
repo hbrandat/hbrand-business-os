@@ -39,6 +39,9 @@ interface Prospect {
   customer_id?: string
   welcome_sent: boolean
   dsgvo_sent: boolean
+  website_analysis?: any
+  demo_page_html?: string
+  analysis_at?: string
 }
 
 // ── Status-Meta ───────────────────────────────────────────────────────────────
@@ -349,6 +352,32 @@ function ProspectCard({
   const [busy, setBusy] = useState(false)
   const [showRueckruf, setShowRueckruf] = useState(false)
   const [showConvertConfirm, setShowConvertConfirm] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [showAnalysis, setShowAnalysis] = useState(false)
+  const [showDemo, setShowDemo] = useState(false)
+
+  const analysis = p.website_analysis as any
+
+  async function runAnalysis() {
+    setAnalyzing(true)
+    try {
+      const res = await fetch('/api/lukas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prospectId: p.id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        await onPatch({})  // reload
+        setShowAnalysis(true)
+      } else {
+        alert('Fehler: ' + data.error)
+      }
+    } catch (e: any) {
+      alert('Fehler: ' + e.message)
+    }
+    setAnalyzing(false)
+  }
 
   const meta = STATUS_META[p.status]
   const prio = PRIORITY_META[p.priority]
@@ -531,6 +560,18 @@ function ProspectCard({
               className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 text-xs rounded-lg transition-all">
               <X className="w-3.5 h-3.5" /> Abgelehnt
             </button>
+
+            {/* LUKAS: Website analysieren */}
+            {p.website && (
+              <button onClick={runAnalysis} disabled={analyzing || busy}
+                className={cn('flex items-center gap-1.5 px-2.5 py-1.5 border rounded-lg text-xs transition-all ml-auto',
+                  analysis
+                    ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border-blue-500/20'
+                    : 'bg-white/5 hover:bg-blue-500/10 text-zinc-400 hover:text-blue-400 border-white/10')}>
+                {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : '🔍'}
+                {analyzing ? 'LUKAS analysiert…' : analysis ? 'Analyse ansehen' : 'Website analysieren'}
+              </button>
+            )}
           </div>
         )}
 
@@ -618,6 +659,97 @@ function ProspectCard({
               className="flex items-center gap-1.5 text-xs text-zinc-600 hover:text-red-400 transition-colors">
               <Archive className="w-3 h-3" /> Endgültig löschen
             </button>
+          )}
+
+          {/* LUKAS Analyse-Ergebnis */}
+          {analysis && (showAnalysis || open) && (
+            <div className="space-y-3 border-t border-white/5 pt-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-blue-400 flex items-center gap-1.5">
+                  🔍 LUKAS Website-Analyse
+                  {p.analysis_at && <span className="text-zinc-600 font-normal">{new Date(p.analysis_at).toLocaleDateString('de-AT')}</span>}
+                </p>
+                <div className="flex gap-2">
+                  {(p as any).demo_page_html && (
+                    <button onClick={() => setShowDemo(true)}
+                      className="text-xs text-violet-400 hover:text-violet-300 border border-violet-500/30 px-2 py-1 rounded-lg">
+                      🖥 Demo ansehen
+                    </button>
+                  )}
+                  <button onClick={runAnalysis} disabled={analyzing}
+                    className="text-xs text-zinc-500 hover:text-white px-2 py-1 rounded-lg hover:bg-white/5">
+                    {analyzing ? '…' : '↻ Neu'}
+                  </button>
+                </div>
+              </div>
+
+              {analysis.firma_typ && (
+                <p className="text-xs text-zinc-400 bg-black/20 rounded-lg p-2.5">
+                  <span className="text-zinc-500">Was sie machen:</span> {analysis.firma_typ}
+                </p>
+              )}
+
+              {analysis.website_probleme?.length > 0 && (
+                <div>
+                  <p className="text-xs text-red-400 font-medium mb-1.5">❌ Website-Probleme ({analysis.website_score ?? '?'}/10)</p>
+                  <ul className="space-y-1">
+                    {analysis.website_probleme.map((prob: string, i: number) => (
+                      <li key={i} className="text-xs text-zinc-400 flex gap-1.5">
+                        <span className="text-red-500 mt-0.5">•</span>{prob}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {analysis.ki_potenzial?.length > 0 && (
+                <div>
+                  <p className="text-xs text-emerald-400 font-medium mb-1.5">✨ KI-Potenzial</p>
+                  <ul className="space-y-1">
+                    {analysis.ki_potenzial.map((pot: string, i: number) => (
+                      <li key={i} className="text-xs text-zinc-400 flex gap-1.5">
+                        <span className="text-emerald-500 mt-0.5">•</span>{pot}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {analysis.verkaufspitch && (
+                <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-3">
+                  <p className="text-xs text-violet-400 font-medium mb-1">🎯 Dein Verkaufspitch</p>
+                  <p className="text-xs text-zinc-300 leading-relaxed">{analysis.verkaufspitch}</p>
+                </div>
+              )}
+
+              {analysis.empfohlenes_paket && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-zinc-500">Empfehlung:</span>
+                  <span className="text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-full border border-violet-500/20 capitalize">
+                    {analysis.empfohlenes_paket} {analysis.empfohlenes_paket === 'starter' ? '(149€)' : analysis.empfohlenes_paket === 'professional' ? '(299€)' : '(499€)'}
+                  </span>
+                  {analysis.paket_begruendung && (
+                    <span className="text-zinc-600">{analysis.paket_begruendung}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Demo Modal */}
+          {showDemo && (p as any).demo_page_html && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col" onClick={() => setShowDemo(false)}>
+              <div className="flex items-center justify-between p-3 bg-zinc-900 border-b border-white/10" onClick={e => e.stopPropagation()}>
+                <p className="text-sm font-medium text-white">🖥 Demo: {firma}</p>
+                <button onClick={() => setShowDemo(false)} className="text-zinc-400 hover:text-white p-1">✕</button>
+              </div>
+              <iframe
+                srcDoc={(p as any).demo_page_html}
+                className="flex-1 w-full"
+                sandbox="allow-scripts"
+                onClick={(e: any) => e.stopPropagation()}
+              />
+            </div>
           )}
         </div>
       )}
