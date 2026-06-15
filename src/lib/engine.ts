@@ -13,9 +13,12 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 
 // Modellpreise (USD pro 1M Token) — grob, für Kostenschätzung
 const PRICING: Record<string, { in: number; out: number }> = {
-  'claude-opus-4-8': { in: 15, out: 75 },
-  'claude-sonnet-4': { in: 3, out: 15 },
-  'claude-haiku-3-5': { in: 0.8, out: 4 },
+  'claude-opus-4-8':   { in: 15,   out: 75  },
+  'claude-sonnet-4':   { in: 3,    out: 15  },
+  'claude-haiku-3-5':  { in: 0.8,  out: 4   },
+  'gemini-2.0-flash':  { in: 0.075, out: 0.3 },
+  'gemini-1.5-flash':  { in: 0.075, out: 0.3 },
+  'gemini-1.5-pro':    { in: 1.25,  out: 5   },
 }
 
 export type LLMResult = {
@@ -24,14 +27,15 @@ export type LLMResult = {
   output_tokens: number
   cost_usd: number
   model: string
+  search_queries?: string[]   // nur bei Gemini mit Google Search
 }
 
-// Ruft Anthropic auf und gibt Text + Token/Kosten zurück
-export async function callLLM(
+// ── Anthropic (Claude) ────────────────────────────────────────────────────────
+async function callClaude(
   model: string,
   system: string,
   userContent: string,
-  maxTokens = 4096
+  maxTokens: number
 ): Promise<LLMResult> {
   const key = process.env.ANTHROPIC_API_KEY
   if (!key) throw new Error('ANTHROPIC_API_KEY fehlt am Server')
@@ -63,6 +67,73 @@ export async function callLLM(
   const cost = (inTok / 1e6) * p.in + (outTok / 1e6) * p.out
 
   return { text, input_tokens: inTok, output_tokens: outTok, cost_usd: cost, model }
+}
+
+// ── Google Gemini mit eingebauter Google-Suche ────────────────────────────────
+/**
+ * Ruft Gemini auf — mit google_search Tool aktiviert.
+ * Gemini sucht selbstständig im Internet und liefert gegrundete Antworten.
+ * Perfekt für VERA: keine erfundenen Kontaktdaten möglich.
+ */
+async function callGemini(
+  model: string,
+  system: string,
+  userContent: string,
+  maxTokens: number
+): Promise<LLMResult> {
+  const key = process.env.GEMINI_API_KEY
+  if (!key) throw new Error('GEMINI_API_KEY fehlt am Server (https://aistudio.google.com/apikey)')
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`
+
+  const body = {
+    system_instruction: { parts: [{ text: system }] },
+    contents: [{ role: 'user', parts: [{ text: userContent }] }],
+    tools: [{ googleSearch: {} }],
+    generationConfig: { maxOutputTokens: maxTokens },
+  }
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Gemini ${res.status}: ${err.slice(0, 300)}`)
+  }
+
+  const data = await res.json()
+  const candidate = data.candidates?.[0]
+  // Texte aus allen Parts zusammensetzen (Gemini kann mehrere Parts zurückgeben)
+  const text = (candidate?.content?.parts ?? [])
+    .map((p: any) => p.text ?? '')
+    .join('')
+    .trim()
+
+  const inTok  = data.usageMetadata?.promptTokenCount ?? 0
+  const outTok = data.usageMetadata?.candidatesTokenCount ?? 0
+  const p = PRICING[model] ?? PRICING['gemini-2.0-flash']
+  const cost = (inTok / 1e6) * p.in + (outTok / 1e6) * p.out
+
+  // Welche Suchanfragen hat Gemini gestellt?
+  const searchQueries: string[] = (candidate?.groundingMetadata?.webSearchQueries ?? [])
+
+  return { text, input_tokens: inTok, output_tokens: outTok, cost_usd: cost, model, search_queries: searchQueries }
+}
+
+// ── Haupt-Dispatcher: wählt Provider anhand Modellname ───────────────────────
+export async function callLLM(
+  model: string,
+  system: string,
+  userContent: string,
+  maxTokens = 4096
+): Promise<LLMResult> {
+  if (model.startsWith('gemini-')) {
+    return callGemini(model, system, userContent, maxTokens)
+  }
+  return callClaude(model, system, userContent, maxTokens)
 }
 
 // Schickt eine Telegram-Nachricht an den Chef. Gibt {ok} zurück, wirft nie.
