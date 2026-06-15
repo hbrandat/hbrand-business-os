@@ -17,6 +17,8 @@ const PRICING: Record<string, { in: number; out: number }> = {
   'claude-sonnet-4':   { in: 3,    out: 15  },
   'claude-haiku-3-5':  { in: 0.8,  out: 4   },
   'gemini-2.0-flash':  { in: 0.075, out: 0.3 },
+  'gemini-2.0-flash-lite': { in: 0.075, out: 0.3 },
+  'gemini-2.5-flash':  { in: 0.075, out: 0.3 },
   'gemini-1.5-flash':  { in: 0.075, out: 0.3 },
   'gemini-1.5-pro':    { in: 1.25,  out: 5   },
 }
@@ -114,7 +116,7 @@ async function callGemini(
 
   const inTok  = data.usageMetadata?.promptTokenCount ?? 0
   const outTok = data.usageMetadata?.candidatesTokenCount ?? 0
-  const p = PRICING[model] ?? PRICING['gemini-2.0-flash']
+  const p = PRICING[model] ?? PRICING['gemini-2.5-flash']
   const cost = (inTok / 1e6) * p.in + (outTok / 1e6) * p.out
 
   // Welche Suchanfragen hat Gemini gestellt?

@@ -27,7 +27,7 @@ BRANCHE: ${branche}
 ---`
 
     const result = await callLLM(
-      'gemini-2.0-flash',
+      'gemini-2.5-flash',
       `Du bist VERA, die Sales-Agentin von hBrand.at aus Klagenfurt.
 Du recherchierst potenzielle Neukunden für Alexander Hillebrand.
 Zielgruppe: KMU in Kärnten (Installateure, Elektriker, Handwerker, Ordinationen).
