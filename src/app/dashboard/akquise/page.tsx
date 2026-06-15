@@ -563,13 +563,15 @@ function ProspectCard({
 
             {/* LUKAS: Website analysieren */}
             {p.website && (
-              <button onClick={runAnalysis} disabled={analyzing || busy}
+              <button
+                onClick={() => analysis ? setShowAnalysis(a => !a) : runAnalysis()}
+                disabled={analyzing || busy}
                 className={cn('flex items-center gap-1.5 px-2.5 py-1.5 border rounded-lg text-xs transition-all ml-auto',
                   analysis
                     ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border-blue-500/20'
                     : 'bg-white/5 hover:bg-blue-500/10 text-zinc-400 hover:text-blue-400 border-white/10')}>
                 {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : '🔍'}
-                {analyzing ? 'LUKAS analysiert…' : analysis ? 'Analyse ansehen' : 'Website analysieren'}
+                {analyzing ? 'LUKAS analysiert…' : analysis ? (showAnalysis ? 'Analyse zuklappen' : 'Analyse ansehen') : 'Website analysieren'}
               </button>
             )}
           </div>
