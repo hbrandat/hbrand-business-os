@@ -32,7 +32,19 @@ BRANCHE: ${branche}
 Du recherchierst potenzielle Neukunden für Alexander Hillebrand.
 Zielgruppe: KMU in Kärnten (Installateure, Elektriker, Handwerker, Ordinationen).
 Wichtig: Nur echte, verifizierte Betriebe. Keine erfundenen Daten.`,
-      prompt,
+      `Suche genau 5 ${branche}-Betriebe in ${ort}, Österreich über Google.
+Gib die Ergebnisse EXAKT in diesem Format aus, einen Block pro Betrieb, getrennt durch ---:
+
+FIRMA: [Firmenname]
+ANSPRECHPARTNER: [Inhaber oder Geschäftsführer, falls bekannt, sonst leer lassen]
+TELEFON: [Telefonnummer]
+EMAIL: [E-Mail Adresse]
+WEBSITE: [Website URL]
+ORT: [Ort]
+BRANCHE: ${branche}
+---
+
+Wichtig: Nur dieses exakte Format, keine zusätzlichen Erklärungen davor oder danach.`,
       2048
     )
 
@@ -44,27 +56,35 @@ Wichtig: Nur echte, verifizierte Betriebe. Keine erfundenen Daten.`,
       result_summary: result.text.slice(0, 200),
     })
 
-    // Prospects aus dem Text parsen
+    // Robusterer Parser — mehrere Formate unterstützen
     const db = svc()
-    const blocks = result.text.split(/---+/).filter(b => b.trim())
     const created: any[] = []
 
-    for (const block of blocks) {
-      const get = (key: string) => {
-        const m = block.match(new RegExp(`${key}:\\s*(.+)`, 'i'))
-        return m ? m[1].trim() : ''
-      }
-      const firma = get('FIRMA')
-      if (!firma) continue
+    // Blöcke aufteilen (--- als Trenner)
+    const blocks = result.text.split(/\n---+\n?/).filter(b => b.trim().length > 10)
 
-      const { data } = await db.from('prospects').insert({
-        name:     get('ANSPRECHPARTNER') || firma,
+    for (const block of blocks) {
+      const get = (keys: string[]) => {
+        for (const key of keys) {
+          const m = block.match(new RegExp(`(?:^|\\n)\\s*\\*?\\*?${key}\\*?\\*?:?\\s*(.+)`, 'i'))
+          if (m && m[1].trim() && m[1].trim() !== '—' && m[1].trim() !== '-') {
+            return m[1].trim().replace(/^\*+|\*+$/g, '')
+          }
+        }
+        return ''
+      }
+
+      const firma = get(['FIRMA', 'Firma', 'Firmenname', 'Name', 'Betrieb', 'Unternehmen'])
+      if (!firma || firma.length < 2) continue
+
+      const { data, error } = await db.from('prospects').insert({
+        name:     get(['ANSPRECHPARTNER', 'Ansprechpartner', 'Inhaber', 'Geschäftsführer', 'Kontakt']) || firma,
         company:  firma,
-        phone:    get('TELEFON'),
-        email:    get('EMAIL'),
-        website:  get('WEBSITE'),
-        city:     get('ORT') || ort,
-        industry: get('BRANCHE') || branche,
+        phone:    get(['TELEFON', 'Telefon', 'Tel', 'Phone']),
+        email:    get(['EMAIL', 'E-Mail', 'Email', 'Mail']),
+        website:  get(['WEBSITE', 'Website', 'Web', 'URL', 'Homepage']),
+        city:     get(['ORT', 'Ort', 'Stadt', 'Standort']) || ort,
+        industry: get(['BRANCHE', 'Branche']) || branche,
         source:   'vera',
         priority: 'mittel',
         status:   'neu',
