@@ -740,7 +740,7 @@ function ProspectCard({
           {showDemo && (p as any).demo_page_html && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col" onClick={() => setShowDemo(false)}>
               <div className="flex items-center justify-between p-3 bg-zinc-900 border-b border-white/10" onClick={e => e.stopPropagation()}>
-                <p className="text-sm font-medium text-white">🖥 Demo: {firma}</p>
+                <p className="text-sm font-medium text-white">🖥 Demo: {p.company || p.name}</p>
                 <button onClick={() => setShowDemo(false)} className="text-zinc-400 hover:text-white p-1">✕</button>
               </div>
               <iframe
